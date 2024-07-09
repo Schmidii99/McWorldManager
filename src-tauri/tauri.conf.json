@@ -16,6 +16,12 @@
       "protocol": {
         "asset": true,
         "assetScope": ["**", "**/*", "/**/*"]
+      },
+      "fs": {
+        "readFile": true,
+        "readDir": true,
+        "exists": true,
+        "scope": ["**", "**/*", "/**/*"]
       }
     },
     "bundle": {
