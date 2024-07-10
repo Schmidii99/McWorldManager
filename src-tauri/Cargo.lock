@@ -85,8 +85,7 @@ name = "app"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
- "flate2",
- "nbt_rust",
+ "hematite-nbt",
  "platform-dirs",
  "rusqlite",
  "rust_search",
@@ -1230,6 +1229,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 
 [[package]]
+name = "hematite-nbt"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "670d0784ee67cfb57393dc1837867d2951f9a59ca7db99a653499c854f745739"
+dependencies = [
+ "byteorder",
+ "cesu8",
+ "flate2",
+ "serde",
+]
+
+[[package]]
 name = "hermit-abi"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1625,13 +1636,6 @@ checksum = "e7810e0be55b428ada41041c41f32c9f1a42817901b4ccf45fa3d4b6561e74c7"
 dependencies = [
  "adler",
  "simd-adler32",
-]
-
-[[package]]
-name = "nbt_rust"
-version = "0.1.0"
-dependencies = [
- "flate2",
 ]
 
 [[package]]

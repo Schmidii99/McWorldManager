@@ -22,10 +22,7 @@ rusqlite = { version = "0.29.0", features = ["bundled"] }
 rust_search = "2.0.0"
 platform-dirs = "0.3.0"
 base64 = "0.22.1"
-flate2 = "1.0.30"
-
-[dependencies.nbt_rust]
-path = "../../nbt_rust"
+hematite-nbt = "0.5.2"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
