@@ -1,4 +1,9 @@
 
+export function getVersionName(id: number): string | undefined {
+    // @ts-ignore
+    return VersionList[id];
+}
+
 export const VersionList = {100:"Java Edition 15w32a",
                             103:"Java Edition 15w32b",
                             104:"Java Edition 15w32c",
