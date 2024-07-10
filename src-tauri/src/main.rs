@@ -4,23 +4,25 @@
 mod database;
 mod state;
 
-use std::default;
-use std::fs;
-use std::fs::DirEntry;
+use std::{
+    fs,
+    fs::File,
+    io::{self, Read, Seek},
+};
 use std::path::PathBuf;
 use base64::{engine::general_purpose, Engine as _};
 
+use nbt::Blob;
 use state::{AppState, ServiceAccess};
-use tauri::api::path;
 use tauri::{State, Manager, AppHandle};
 
-use rust_search::{SearchBuilder, similarity_sort};
+use rust_search::SearchBuilder;
 use platform_dirs::AppDirs;
 
 fn main() {
   tauri::Builder::default()
       .manage(AppState { db: Default::default() })
-      .invoke_handler(tauri::generate_handler![greet, get_saves])
+      .invoke_handler(tauri::generate_handler![greet, get_saves, deserialize_nbt_file, find_world_paths])
       .setup(|app| {
           let handle = app.handle();
 
@@ -68,4 +70,33 @@ fn get_saves(_app_handle: AppHandle) -> String {
     }
 
     saves
+}
+
+#[tauri::command]
+fn deserialize_nbt_file(path: &str) -> String {
+    let mut input_file: fs::File = std::fs::File::open(path).unwrap();
+    
+    let data_blob = detect_and_read_nbt(&mut input_file).unwrap_or(Blob::default());
+
+    serde_json::to_string(&data_blob).unwrap()
+}
+
+fn detect_and_read_nbt(input: &mut File) -> io::Result<nbt::Blob> {
+    input.seek(std::io::SeekFrom::Start(0))?;
+    let mut header = [0; 2];
+    input.read_exact(&mut header)?;
+    input.seek(std::io::SeekFrom::Start(0))?;
+    match header {
+        // Common ZLIB headers: https://stackoverflow.com/a/17176881
+        [0x78, 0x01] | [0x78, 0x9C] | [0x78, 0xDA] => Ok(nbt::from_zlib_reader(input)?),
+        // GZIP header: https://en.wikipedia.org/wiki/Gzip#File_format
+        [0x1f, 0x8b] => Ok(nbt::from_gzip_reader(input)?),
+        // Assume we have raw (uncompressed) NBT
+        _ => Ok(nbt::from_reader(input)?),
+    }
+}
+
+#[tauri::command]
+fn find_world_paths() {
+    todo!();
 }
