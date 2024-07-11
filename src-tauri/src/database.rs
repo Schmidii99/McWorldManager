@@ -78,23 +78,32 @@ pub fn get_all_paths(db: &Connection) -> Result<Vec<String>, rusqlite::Error> {
 }
 
 use std::path::PathBuf;
-use platform_dirs::AppDirs;
 
-pub fn insert_default_minecraft_folder(db: &Connection) {
-  
-let minecraft_folder_path: PathBuf = AppDirs::new(Some(".minecraft\\saves"), true).unwrap().config_dir;
-
-  let paths = fs::read_dir(minecraft_folder_path).unwrap();
+pub fn insert_subfolders_of_folder(db: &Connection, saves_path: PathBuf) {
+  let paths = fs::read_dir(saves_path).unwrap();
 
   for p in paths {
       match p {
           Ok(entry) => {
+            // check if folder has region sub folder otherwise skip
+            if !(entry.path().join("region").exists()) { continue; }
+
+            println!("Adding path: {}", entry.path().to_str().unwrap());
+
             // check if entry does not exists
             let mut statement = db.prepare("SELECT * FROM world_paths WHERE path = @path").unwrap();
             let mut rows = statement.query(named_params! { "@path": general_purpose::STANDARD.encode(entry.path().to_str().unwrap()) }).unwrap();
 
-            if rows.next().is_err() {
-              add_path(entry.path().to_str().unwrap(), db).unwrap();
+            // check if no rows were returned
+            let res = rows.next();
+            match res {
+                Ok(opt) => {
+                  // None means there are no rows with this path
+                  if opt.is_none() {
+                    add_path(entry.path().to_str().unwrap(), db).unwrap();
+                  }
+                },
+                _ => { continue; }
             }
           },
           Err(_e) => continue
