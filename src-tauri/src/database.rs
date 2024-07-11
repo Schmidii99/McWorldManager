@@ -57,7 +57,7 @@ pub fn upgrade_database_if_needed(db: &mut Connection, existing_version: u32) ->
   Ok(())
 }
 
-pub fn add_item(path: &str, db: &Connection) -> Result<(), rusqlite::Error> {
+pub fn add_path(path: &str, db: &Connection) -> Result<(), rusqlite::Error> {
     let mut statement = db.prepare("INSERT INTO world_paths (path) VALUES (@path)")?;
     statement.execute(named_params! { "@path": general_purpose::STANDARD.encode(path) })?;
 
@@ -89,7 +89,15 @@ let minecraft_folder_path: PathBuf = AppDirs::new(Some(".minecraft\\saves"), tru
   for p in paths {
       match p {
           Ok(entry) => {
-            add_item(entry.path().to_str().unwrap(), db).unwrap();
+            // check if entry does not exists
+            let mut statement = db.prepare("SELECT * FROM world_paths WHERE path = @path").unwrap();
+            let mut rows = statement.query(named_params! { "@path": general_purpose::STANDARD.encode(entry.path().to_str().unwrap()) }).unwrap();
+
+            if rows.next().is_err() {
+              add_path(entry.path().to_str().unwrap(), db).unwrap();
+            } else {
+                println!("not added");
+            }
           },
           Err(_e) => continue
       }   
