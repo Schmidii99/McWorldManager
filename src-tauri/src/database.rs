@@ -95,8 +95,6 @@ let minecraft_folder_path: PathBuf = AppDirs::new(Some(".minecraft\\saves"), tru
 
             if rows.next().is_err() {
               add_path(entry.path().to_str().unwrap(), db).unwrap();
-            } else {
-                println!("not added");
             }
           },
           Err(_e) => continue
