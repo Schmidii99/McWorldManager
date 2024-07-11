@@ -23,7 +23,7 @@ everything-sdk = "0.0.5"
 platform-dirs = "0.3.0"
 base64 = "0.22.1"
 hematite-nbt = "0.5.2"
-everything-sdk = "0.0.5"
+native-dialog = "0.7.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
