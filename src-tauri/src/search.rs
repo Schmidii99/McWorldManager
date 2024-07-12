@@ -1,16 +1,25 @@
+use std::path::PathBuf;
+
 use everything_sdk::*;
-use base64::{engine::general_purpose, Engine as _};
+
+pub struct PathsFound {
+    pub world_paths: Vec<PathBuf>,
+    pub server_paths: Vec<PathBuf>,
+    pub invalid_path_count: u32,
+}
 
 /// Returns a list of base64 encoded world folder paths.
-pub fn find_world_paths_with_everything() -> Result<Vec<String>> {
+pub fn find_world_paths_with_everything() -> Result<PathsFound> {
     let mut everything = global().try_lock().unwrap();
 
-    let mut saves: Vec<String> = Vec::new();
+    let mut worlds: Vec<PathBuf> = Vec::new();
+    let mut servers: Vec<PathBuf> = Vec::new();
+    let mut invalid_count = 0;
 
     // Check whether the Everything.exe in the background is running.
     match everything.is_db_loaded() {
-        Ok(false) => panic!("The Everything database has not been fully loaded now."),
-        Err(EverythingError::Ipc) => panic!("Everything is required to run in the background."),
+        Ok(false) => Err(EverythingError::InvalidCall),
+        Err(EverythingError::Ipc) => Err(EverythingError::Ipc),
         _ => {
             // Now _Everything_ is OK!
 
@@ -40,12 +49,32 @@ pub fn find_world_paths_with_everything() -> Result<Vec<String>> {
 
             // Walking the 5 query results from Everything IPC by iterator.
             for item in results.iter() {
-                let full_path = item.filepath().unwrap();
+                let mut full_path = item.filepath().unwrap();
+                full_path.pop();
 
-                saves.push(general_purpose::STANDARD.encode(full_path.display().to_string()) + ",");
+                let mut parent_path = full_path.clone();
+                // check if region folder exists
+                let region_path = PathBuf::from(parent_path.display().to_string() + "\\region\\");
+                if !region_path.exists() { 
+                    println!("Skipping due to no region folder: {}", full_path.display());
+                    invalid_count += 1;
+                    continue; 
+                }
+                parent_path.pop();
+                // check if folder is a server path then skip
+                let eula_path = PathBuf::from(parent_path.display().to_string() + "\\eula.txt");
+                if eula_path.exists() { 
+                    println!("Skipping due to path linking to a server: {}", full_path.display());
+                    servers.push(full_path);
+                    continue; 
+                }
+
+                println!("Found valid world path: {}", full_path.display());
+
+                worlds.push(full_path);
             }
 
-            Ok(saves)
+            Ok(PathsFound { world_paths: worlds, server_paths: servers, invalid_path_count: invalid_count })
         }
     }
 

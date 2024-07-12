@@ -8,6 +8,7 @@ mod nbt_reader;
 
 use std::{fs, path::PathBuf};
 
+use everything_sdk::EverythingError;
 use nbt::Blob;
 use rusqlite::Connection;
 use state::{AppState, ServiceAccess};
@@ -15,6 +16,13 @@ use tauri::{State, Manager, AppHandle, CustomMenuItem, Menu, Submenu};
 
 use native_dialog::FileDialog;
 use platform_dirs::AppDirs;
+
+// event payload
+#[derive(Clone, serde::Serialize)]
+struct MessageboxPayload {
+  message: String,
+  title: String
+}
 
 fn main() {
     // create menus
@@ -27,6 +35,8 @@ fn main() {
     tauri::Builder::default()
       .menu(menu)
       .on_menu_event(|event| {
+        let app_handle: AppHandle = event.window().app_handle();
+
         match event.menu_item_id() {
           "reload_default" => {
             std::process::exit(0);
@@ -35,13 +45,32 @@ fn main() {
             let path: String = open_folder_picker();
             if path.is_empty() { return; }
 
-            event.window().app_handle().db(|db: &Connection| database::insert_subfolders_of_folder(db, PathBuf::from(path)));
+            app_handle.db(|db: &Connection| database::insert_subfolders_of_folder(db, PathBuf::from(path)));
           }
           "find_everything" => {
-            todo!();
+            let paths_found = search::find_world_paths_with_everything();
+            match paths_found {
+                Ok(paths) => {
+                  for path in &paths.world_paths {
+                    app_handle.db(|db: &Connection| database::insert_world_folder(db, path));
+                  }
+
+                  app_handle.emit_all("messagebox", MessageboxPayload {message: "Success!\n Found ".to_owned() + &paths.world_paths.len().to_string() + " worlds \nSkipped " + &paths.invalid_path_count.to_string() + " invalid paths.", title: "Everything search".to_string()}).unwrap();
+                },
+                Err(EverythingError::Ipc) => {
+                  app_handle.emit_all("messagebox_error", MessageboxPayload {message: "Everything is required to run in the background.".to_string(), title: "Everything search".to_string()}).unwrap();
+                }
+                Err(EverythingError::InvalidCall) => {
+                  app_handle.emit_all("messagebox_error", MessageboxPayload {message: "The Everything database has not been fully loaded now.".to_string(), title: "Everything search".to_string()}).unwrap();
+                }
+                _ => {}
+            }
           }
           _ => {}
         }
+        // trigger refresh event in frontend
+        app_handle.emit_all("refresh", {}).unwrap();
+
       })
       .manage(AppState { db: Default::default() })
       .invoke_handler(tauri::generate_handler![deserialize_nbt_file, get_saved_paths])
