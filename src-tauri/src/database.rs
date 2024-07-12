@@ -1,5 +1,5 @@
 use rusqlite::{Connection, named_params};
-use tauri::AppHandle;
+use tauri::{http::header::RETRY_AFTER, AppHandle};
 use std::fs;
 use base64::{engine::general_purpose, Engine as _};
 
@@ -88,7 +88,7 @@ pub fn insert_subfolders_of_folder(db: &Connection, saves_path: PathBuf) {
             // check if folder has region sub folder otherwise skip
             if !(entry.path().join("region").exists()) { continue; }
 
-            println!("Adding path: {}", entry.path().to_str().unwrap());
+            println!("Adding world path to db: {}", entry.path().to_str().unwrap());
 
             // check if entry does not exists
             let mut statement = db.prepare("SELECT * FROM world_paths WHERE path = @path").unwrap();
@@ -109,6 +109,30 @@ pub fn insert_subfolders_of_folder(db: &Connection, saves_path: PathBuf) {
           Err(_e) => continue
       }   
   }
+}
+
+pub fn insert_world_folder(db: &Connection, path: &PathBuf) {
+  if !(path.join("region").exists()) { return; }
+
+  println!("Adding world path to db: {}", path.display());
+
+  // check if entry does not exists
+  let mut statement = db.prepare("SELECT * FROM world_paths WHERE path = @path").unwrap();
+  let mut rows = statement.query(named_params! { "@path": general_purpose::STANDARD.encode(path.display().to_string())}).unwrap();
+
+  // check if no rows were returned
+  let res = rows.next();
+  match res {
+      Ok(opt) => {
+        // None means there are no rows with this path
+        if opt.is_none() {
+          add_path(&(path.display().to_string()), db).unwrap();
+        }
+      },
+      _ => { return; }
+  }
+
+
 }
 
 pub fn get_path_count(db: &Connection) -> Result<usize, rusqlite::Error> {
