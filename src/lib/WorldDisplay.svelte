@@ -3,6 +3,7 @@
     import { convertFileSrc, invoke } from '@tauri-apps/api/tauri';
     import { readDir, exists } from '@tauri-apps/api/fs';
     import { getVersionName } from "./MinecraftVersions";
+    import default_icon from "$lib/assets/default_icon.webp";
 
     export let path: string;
 
@@ -25,6 +26,8 @@
 <div class="flex flex-col min-w-48 min-h-64 max-w-48 bg-teal-300 ml-4 mt-4 overflow-hidden">
     {#if img_url}
         <img class="w-48 h-48" src="{img_url}" alt="Thumbnail">
+    {:else}
+        <img class="w-48 h-48" src="{default_icon}" alt="Thumbnail">
     {/if}
     <div class="textBox h-8 flex">
         <span>{path.split("\\").pop()}</span>
