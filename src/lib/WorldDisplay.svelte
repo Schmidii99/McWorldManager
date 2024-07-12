@@ -11,7 +11,7 @@
 
     onMount(async () => {
         if (await exists(path + "\\icon.png")) {
-            img_url = convertFileSrc(path + "/icon.png");
+            img_url = convertFileSrc(path + "\\icon.png");
         }
 
         const firstPlayerDataFileName = (await readDir(path + "\\playerdata\\"))[0].name;
