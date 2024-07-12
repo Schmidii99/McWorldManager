@@ -22,7 +22,11 @@
         "readDir": true,
         "exists": true,
         "scope": ["**", "**/*", "/**/*"]
+      },
+      "dialog": {
+        "message": true
       }
+      
     },
     "bundle": {
       "active": true,
