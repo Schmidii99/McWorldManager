@@ -1,5 +1,5 @@
 use rusqlite::{Connection, named_params};
-use tauri::{http::header::RETRY_AFTER, AppHandle};
+use tauri::AppHandle;
 use std::fs;
 use base64::{engine::general_purpose, Engine as _};
 
